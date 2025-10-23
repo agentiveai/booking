@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Widget - Test Page</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 60px;
+    }
+
+    .header h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .section h2 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .section p {
+      color: #718096;
+      margin-bottom: 24px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .code-block {
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.8;
+      overflow-x: auto;
+      color: #2d3748;
+    }
+
+    .demo-area {
+      background: #f9fafb;
+      border: 2px dashed #cbd5e0;
+      border-radius: 12px;
+      padding: 40px;
+      margin-top: 24px;
+      min-height: 200px;
+    }
+
+    .demo-label {
+      text-align: center;
+      color: #a0aec0;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    /* Custom popup button styling */
+    .custom-booking-button {
+      display: inline-block;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .custom-booking-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .button-container {
+      text-align: center;
+    }
+
+    .note {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #7d6608;
+    }
+
+    .note strong {
+      color: #f39c12;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 60px;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+      margin: 32px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 10px;
+      }
+
+      .header h1 {
+        font-size: 32px;
+      }
+
+      .section {
+        padding: 24px;
+      }
+
+      .section h2 {
+        font-size: 22px;
+      }
+
+      .code-block {
+        font-size: 12px;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 Booking Widget Test Page</h1>
+      <p>Test all three embed widget types with live demos</p>
+    </div>
+
+    <!-- Inline Embed Section -->
+    <div class="section">
+      <h2>
+        <span class="section-badge">Type 1</span>
+        Inline Embed Widget
+      </h2>
+      <p>
+        The inline embed displays the booking widget directly embedded in your page content.
+        Perfect for dedicated booking pages or sections.
+      </p>
+
+      <div class="code-block">
+&lt;!-- Add this where you want the widget to appear --&gt;<br>
+&lt;div id="booking-widget" data-provider-id="YOUR_USER_ID"&gt;&lt;/div&gt;<br>
+&lt;script src="https://yourdomain.com/widget.js"&gt;&lt;/script&gt;
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="demo-area">
+        <div class="demo-label">Live Demo</div>
+        <!-- Inline widget will be injected here -->
+        <div id="booking-widget" data-provider-id="USER_ID_PLACEHOLDER"></div>
+      </div>
+    </div>
+
+    <!-- Popup Button Section -->
+    <div class="section">
+      <h2>
+        <span class="section-badge">Type 2</span>
+        Popup Button Widget
+      </h2>
+      <p>
+        Add a custom button anywhere on your page that opens the booking widget in a beautiful modal popup.
+        Great for navigation bars, hero sections, or call-to-action areas.
+      </p>
+
+      <div class="code-block">
+&lt;!-- Add this button anywhere on your page --&gt;<br>
+&lt;button data-booking-popup="YOUR_USER_ID" class="your-button-class"&gt;<br>
+&nbsp;&nbsp;Book Appointment<br>
+&lt;/button&gt;<br>
+&lt;script src="https://yourdomain.com/widget.js"&gt;&lt;/script&gt;
+      </div>
+
+      <div class="note">
+        <strong>💡 Tip:</strong>
+        Style the button however you want! The widget script only needs the <code>data-booking-popup</code> attribute to work.
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="demo-area">
+        <div class="demo-label">Live Demo - Click the button</div>
+        <div class="button-container">
+          <button data-booking-popup="USER_ID_PLACEHOLDER" class="custom-booking-button">
+            📅 Book Your Appointment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Button Section -->
+    <div class="section">
+      <h2>
+        <span class="section-badge">Type 3</span>
+        Floating Button Widget
+      </h2>
+      <p>
+        A persistent floating button that stays visible as users scroll your page.
+        The easiest way to add booking functionality to any website.
+      </p>
+
+      <div class="code-block">
+&lt;!-- Add this once at the bottom of your page --&gt;<br>
+&lt;script src="https://yourdomain.com/widget.js"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data-provider-id="YOUR_USER_ID"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data-float="true"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data-button-text="Book Now"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data-button-color="#0066FF"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data-position="bottom-right"&gt;<br>
+&lt;/script&gt;
+      </div>
+
+      <div class="note">
+        <strong>🎨 Customization Options:</strong>
+        <ul style="margin-top: 8px; margin-left: 20px;">
+          <li><code>data-button-text</code> - Change button text (default: "Book")</li>
+          <li><code>data-button-color</code> - Change button color (default: "#0066FF")</li>
+          <li><code>data-position</code> - Position: "bottom-right", "bottom-left", "top-right", "top-left"</li>
+        </ul>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="demo-area">
+        <div class="demo-label">Live Demo - Look for the floating button (bottom-right) →</div>
+        <p style="text-align: center; color: #718096; margin-top: 20px;">
+          A floating "Book" button should appear at the bottom-right corner of your screen.
+        </p>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="section">
+      <h2>📋 How to Use This Test Page</h2>
+      <p>This page demonstrates all three widget types. To test with your actual booking system:</p>
+
+      <ol style="color: #4a5568; margin-left: 24px; line-height: 2;">
+        <li>Replace <code>USER_ID_PLACEHOLDER</code> with your actual user/provider ID</li>
+        <li>Update the widget script URL to point to your domain</li>
+        <li>Open this page in your browser to see live widgets</li>
+        <li>Test booking flow by clicking buttons and selecting services</li>
+      </ol>
+
+      <div class="note" style="margin-top: 24px;">
+        <strong>🔧 For Developers:</strong>
+        Open browser DevTools to see postMessage communication between the iframe and parent window.
+        The widget handles automatic resizing and navigation events.
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Built with ❤️ using Booking Platform Widget System</p>
+      <p style="margin-top: 8px; opacity: 0.7;">Phase 2: Embed Widgets - Test Page</p>
+    </div>
+  </div>
+
+  <!--
+    IMPORTANT: Replace USER_ID_PLACEHOLDER with actual provider ID
+    Example: If your provider ID is "cm2abc123", replace all instances above
+  -->
+
+  <!-- Widget Script - This initializes all three widget types -->
+  <script src="/widget.js"
+          data-provider-id="USER_ID_PLACEHOLDER"
+          data-float="true"
+          data-button-text="Book"
+          data-button-color="#667eea"
+          data-position="bottom-right">
+  </script>
+</body>
+</html>

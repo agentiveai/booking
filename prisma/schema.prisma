@@ -1,0 +1,548 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - service providers and customers
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String?   // Nullable for OAuth users
+  name              String
+  phone             String?
+  role              UserRole  @default(CUSTOMER)
+  language          String    @default("no") // Norwegian by default
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Provider-specific fields
+  businessName      String?
+  businessAddress   String?
+  timezone          String    @default("Europe/Oslo")
+
+  // Branding fields (Phase 1)
+  logo              String?   // URL to uploaded logo
+  brandColor        String    @default("#0066FF") // Primary brand color
+  brandColorDark    String    @default("#0052CC") // Darker shade for hover states
+  plan              Plan      @default(FREE)
+  hideBranding      Boolean   @default(false) // Hide "Powered by" (Pro+ only)
+
+  // Relations
+  bookingsAsCustomer Booking[] @relation("CustomerBookings")
+  bookingsAsProvider Booking[] @relation("ProviderBookings")
+  services          Service[]
+  availability      Availability[]
+  businessHours     BusinessHours[]
+  calendarConnections CalendarConnection[]
+  paymentAccounts   PaymentAccount[]
+  notifications     Notification[]
+  passwordResets    PasswordReset[]
+  staffMembers      StaffMember[] @relation("ProviderStaff")
+  workflows         Workflow[] @relation("ProviderWorkflows")
+  emailTemplates    EmailTemplate[] @relation("ProviderTemplates")
+
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+// Staff member model - employees who can perform services
+model StaffMember {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation("ProviderStaff", fields: [providerId], references: [id], onDelete: Cascade)
+
+  name              String
+  email             String?
+  phone             String?
+  title             String?   // "Tannlege", "Frisør", etc.
+
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  serviceAssignments ServiceStaff[]
+  bookings          Booking[]
+  availability      StaffAvailability[]
+
+  @@index([providerId])
+  @@index([isActive])
+}
+
+// Junction table for services and staff (many-to-many)
+model ServiceStaff {
+  id                String       @id @default(cuid())
+  serviceId         String
+  service           Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staffId           String
+  staff             StaffMember  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime     @default(now())
+
+  @@unique([serviceId, staffId])
+  @@index([serviceId])
+  @@index([staffId])
+}
+
+// Staff-specific availability (overrides business hours)
+model StaffAvailability {
+  id                String       @id @default(cuid())
+  staffId           String
+  staff             StaffMember  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  startTime         DateTime
+  endTime           DateTime
+  isAvailable       Boolean      @default(false) // false = blocked time (vacation, sick leave)
+  reason            String?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([staffId, startTime, endTime])
+}
+
+// Service model - treatments, appointments, sessions
+model Service {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  name              String
+  nameNo            String    // Norwegian translation
+  description       String?
+  descriptionNo     String?
+  duration          Int       // Duration in minutes
+  price             Decimal
+  currency          String    @default("NOK")
+
+  bufferTimeBefore  Int       @default(0) // Minutes
+  bufferTimeAfter   Int       @default(0) // Minutes
+
+  // Capacity settings
+  requiresStaff     Boolean   @default(true)  // Does this service need a staff member?
+  anyStaffMember    Boolean   @default(true)  // Can any staff perform this, or only assigned ones?
+  maxConcurrent     Int       @default(1)      // Max simultaneous bookings (overrides staff count)
+
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  bookings          Booking[]
+  staffAssignments  ServiceStaff[]
+
+  @@index([providerId])
+  @@index([isActive])
+}
+
+// Business hours configuration
+model BusinessHours {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  dayOfWeek         Int       // 0 = Sunday, 1 = Monday, etc.
+  isOpen            Boolean   @default(true)
+  openTime          String    // Format: "09:00"
+  closeTime         String    // Format: "17:00"
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([providerId, dayOfWeek])
+  @@index([providerId])
+}
+
+// Availability - blocks out specific times
+model Availability {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  startTime         DateTime
+  endTime           DateTime
+  isAvailable       Boolean   @default(false) // false = blocked time
+  reason            String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([providerId, startTime, endTime])
+}
+
+// Booking model - core appointments
+model Booking {
+  id                String         @id @default(cuid())
+
+  customerId        String
+  customer          User           @relation("CustomerBookings", fields: [customerId], references: [id])
+
+  providerId        String
+  provider          User           @relation("ProviderBookings", fields: [providerId], references: [id])
+
+  serviceId         String
+  service           Service        @relation(fields: [serviceId], references: [id])
+
+  // Staff assignment (optional - can be null for services that don't require staff)
+  staffId           String?
+  staff             StaffMember?   @relation(fields: [staffId], references: [id])
+
+  startTime         DateTime
+  endTime           DateTime
+
+  status            BookingStatus  @default(PENDING)
+
+  // Customer information (captured at booking time)
+  customerName      String
+  customerEmail     String
+  customerPhone     String?
+  notes             String?
+
+  // Payment information
+  totalAmount       Decimal
+  depositAmount     Decimal?
+  paymentStatus     PaymentStatus  @default(PENDING)
+  paymentMethod     PaymentMethod?
+
+  // Cancellation
+  cancellationPolicyId String?
+  cancellationPolicy   CancellationPolicy? @relation(fields: [cancellationPolicyId], references: [id])
+  cancelledAt       DateTime?
+  cancelledBy       String?       // User ID who cancelled
+  cancellationReason String?
+  refundAmount      Decimal?
+  refundStatus      RefundStatus?
+
+  // Calendar sync
+  calendarEventId   String?
+
+  // Metadata
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  payments          Payment[]
+  notifications     Notification[]
+
+  @@index([customerId, startTime])
+  @@index([providerId, startTime])
+  @@index([serviceId, startTime])
+  @@index([staffId, startTime])
+  @@index([status, startTime])
+  // REMOVED: @@unique([providerId, startTime, endTime]) - allows multiple concurrent bookings
+  @@unique([staffId, startTime, endTime]) // Prevent double-booking same staff member
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  REFUNDED
+  PARTIALLY_REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  VIPPS
+  STRIPE
+  CASH
+  INVOICE
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Payment model - tracks all payment transactions
+model Payment {
+  id                String         @id @default(cuid())
+  bookingId         String
+  booking           Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  amount            Decimal        
+  currency          String         @default("NOK")
+  method            PaymentMethod
+  status            PaymentStatus
+
+  // External payment provider IDs
+  stripePaymentIntentId String?
+  vippsOrderId      String?
+
+  // For authorization holds
+  captureMethod     String?        // manual or automatic
+
+  // Metadata
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+}
+
+// Cancellation policy configuration
+model CancellationPolicy {
+  id                String    @id @default(cuid())
+  name              String
+  nameNo            String
+  description       String?
+  descriptionNo     String?
+
+  // Time-based refund rules (hours before appointment)
+  fullRefundHours   Int       @default(72)  // Full refund if cancelled 72+ hours before
+  partialRefundHours Int      @default(24)  // Partial refund if cancelled 24-72 hours before
+  partialRefundPercent Int    @default(50)  // 50% refund
+  noRefundHours     Int       @default(0)   // No refund if cancelled <24 hours before
+
+  noShowFee         Decimal?  
+
+  isDefault         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  bookings          Booking[]
+}
+
+// Payment account - stores provider's payment credentials
+model PaymentAccount {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  type              PaymentMethod
+
+  // Encrypted credentials
+  stripeAccountId   String?
+  stripePublishableKey String?
+  stripeSecretKey   String?   
+
+  vippsClientId     String?
+  vippsClientSecret String?   
+  vippsMerchantSerialNumber String?
+  vippsSubscriptionKey String? 
+
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([providerId])
+}
+
+// Calendar connection - Google Calendar, Outlook, etc.
+model CalendarConnection {
+  id                String    @id @default(cuid())
+  providerId        String
+  provider          User      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  type              CalendarType
+
+  // OAuth tokens (encrypted)
+  accessToken       String    
+  refreshToken      String?   
+  tokenExpiry       DateTime?
+
+  calendarId        String?   // Specific calendar ID
+
+  isActive          Boolean   @default(true)
+  lastSyncAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([providerId])
+}
+
+enum CalendarType {
+  GOOGLE
+  OUTLOOK
+  APPLE
+}
+
+// Notification model - tracks sent emails/SMS
+model Notification {
+  id                String           @id @default(cuid())
+  bookingId         String
+  booking           Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  recipientId       String
+  recipient         User             @relation(fields: [recipientId], references: [id])
+
+  type              NotificationType
+  channel           NotificationChannel
+
+  subject           String?
+  content           String           
+
+  status            NotificationStatus @default(PENDING)
+  sentAt            DateTime?
+  failureReason     String?
+
+  // External IDs
+  sendgridMessageId String?
+  twilioMessageId   String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([recipientId, type])
+  @@index([status, createdAt])
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  BOOKING_REMINDER_24H
+  BOOKING_REMINDER_1H
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  PAYMENT_RECEIPT
+  PAYMENT_FAILED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+// Password reset tokens
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId, used])
+}
+
+// Workflow model - automated actions based on triggers
+model Workflow {
+  id          String          @id @default(cuid())
+  providerId  String
+  provider    User            @relation("ProviderWorkflows", fields: [providerId], references: [id], onDelete: Cascade)
+
+  name        String
+  nameNo      String          // Norwegian translation
+  description String?
+  descriptionNo String?
+
+  trigger     WorkflowTrigger
+
+  // Time offset for time-based triggers (minutes)
+  // e.g., -1440 = 24 hours before, -60 = 1 hour before
+  timeOffset  Int?
+
+  // Actions to perform (JSON array)
+  // Example: [{ type: "EMAIL", templateId: "reminder-24h", recipientType: "CUSTOMER" }]
+  actions     Json[]
+
+  // Conditions (JSON object) - optional filtering
+  // Example: { serviceIds: ["id1", "id2"], minPrice: 100 }
+  conditions  Json?
+
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([providerId, isActive])
+  @@index([trigger, isActive])
+}
+
+enum WorkflowTrigger {
+  BOOKING_CREATED         // When booking is created
+  BOOKING_CONFIRMED       // When booking is confirmed
+  BOOKING_CANCELLED       // When booking is cancelled
+  BOOKING_COMPLETED       // When booking is marked complete
+  HOURS_BEFORE_24         // 24 hours before booking
+  HOURS_BEFORE_48         // 48 hours before booking
+  HOURS_BEFORE_1          // 1 hour before booking
+  MINUTES_BEFORE_30       // 30 minutes before booking
+  HOURS_AFTER_24          // 24 hours after booking (follow-up)
+}
+
+// Email template model - reusable email templates
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  providerId  String?  // Null = system template, otherwise provider-specific
+  provider    User?    @relation("ProviderTemplates", fields: [providerId], references: [id], onDelete: Cascade)
+
+  name        String
+  nameNo      String
+  type        EmailTemplateType
+
+  subject     String
+  subjectNo   String
+
+  // HTML content with variables: {{customerName}}, {{serviceName}}, {{dateTime}}, etc.
+  htmlContent String   @db.Text
+  htmlContentNo String @db.Text
+
+  // Plain text fallback
+  textContent String   @db.Text
+  textContentNo String @db.Text
+
+  isSystem    Boolean  @default(false) // System templates can't be deleted
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([providerId, type])
+  @@index([type, isSystem])
+}
+
+enum EmailTemplateType {
+  CONFIRMATION        // Booking confirmation
+  REMINDER            // General reminder
+  CANCELLATION        // Cancellation confirmation
+  RESCHEDULED         // Rescheduled notification
+  FOLLOW_UP           // Post-booking follow-up
+  PAYMENT_RECEIPT     // Payment receipt
+  PAYMENT_FAILED      // Payment failure notice
+  CUSTOM              // Custom template
+}
