@@ -104,13 +104,13 @@ export async function POST(
               refundAmount,
               'requested_by_customer'
             );
-            console.log(`Stripe refund initiated for booking ${params.id}: ${refundAmount} NOK`);
+            console.log(`Stripe refund initiated for booking ${id}: ${refundAmount} NOK`);
           } else if (payment.method === 'VIPPS' && payment.vippsOrderId) {
             await vippsClient.refundPayment(
               payment.vippsOrderId,
               Math.round(refundAmount * 100) // Convert to øre
             );
-            console.log(`Vipps refund initiated for booking ${params.id}: ${refundAmount} NOK`);
+            console.log(`Vipps refund initiated for booking ${id}: ${refundAmount} NOK`);
           }
 
           // Update payment status
@@ -142,7 +142,7 @@ export async function POST(
     });
 
     // Trigger cancellation workflows (async, don't wait)
-    triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, params.id)
+    triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, id)
       .catch((error) => console.error('Failed to trigger BOOKING_CANCELLED workflows:', error));
 
     return NextResponse.json({
