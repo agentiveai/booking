@@ -7,9 +7,10 @@ import { vippsClient } from '@/lib/payments/vipps';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { customerEmail } = await request.json();
 
     if (!customerEmail) {
@@ -21,7 +22,7 @@ export async function POST(
 
     // Get the booking
     const booking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         service: true,
         provider: {
@@ -130,7 +131,7 @@ export async function POST(
 
     // Update booking status
     await prisma.booking.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'CANCELLED',
         cancelledAt: new Date(),

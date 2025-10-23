@@ -10,7 +10,7 @@ interface JWTPayload {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -22,7 +22,7 @@ export async function PATCH(
 
     // Get existing service to verify ownership
     const existingService = await prisma.service.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { providerId: true },
     });
 
@@ -39,7 +39,7 @@ export async function PATCH(
 
     // Update service
     const updatedService = await prisma.service.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         name: body.name,
         nameNo: body.nameNo,
@@ -72,7 +72,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -84,7 +84,7 @@ export async function DELETE(
 
     // Get existing service to verify ownership
     const existingService = await prisma.service.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { providerId: true },
     });
 
@@ -99,7 +99,7 @@ export async function DELETE(
 
     // Delete service
     await prisma.service.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({

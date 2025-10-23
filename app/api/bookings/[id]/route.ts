@@ -14,7 +14,7 @@ const updateBookingSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check if this is a public confirmation request (no auth header)
@@ -22,7 +22,7 @@ export async function GET(
     const isPublicRequest = !authHeader;
 
     const booking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         customer: {
           select: {
@@ -104,7 +104,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return requireAuth(request, async (req: AuthenticatedRequest) => {
     try {
@@ -113,7 +113,7 @@ export async function PATCH(
 
       // Get existing booking
       const booking = await prisma.booking.findUnique({
-        where: { id: params.id },
+        where: { id: id },
         include: {
           payments: true,
           cancellationPolicy: true,
@@ -145,7 +145,7 @@ export async function PATCH(
 
       // Update booking
       const updatedBooking = await prisma.booking.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           ...validatedData,
           ...(validatedData.status === 'CANCELLED' && {
@@ -170,13 +170,13 @@ export async function PATCH(
       // Trigger workflows based on status changes (async, don't wait)
       if (validatedData.status && validatedData.status !== booking.status) {
         if (validatedData.status === 'CONFIRMED') {
-          triggerWorkflows(WorkflowTrigger.BOOKING_CONFIRMED, params.id)
+          triggerWorkflows(WorkflowTrigger.BOOKING_CONFIRMED, id)
             .catch((error) => console.error('Failed to trigger BOOKING_CONFIRMED workflows:', error));
         } else if (validatedData.status === 'CANCELLED') {
-          triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, params.id)
+          triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, id)
             .catch((error) => console.error('Failed to trigger BOOKING_CANCELLED workflows:', error));
         } else if (validatedData.status === 'COMPLETED') {
-          triggerWorkflows(WorkflowTrigger.BOOKING_COMPLETED, params.id)
+          triggerWorkflows(WorkflowTrigger.BOOKING_COMPLETED, id)
             .catch((error) => console.error('Failed to trigger BOOKING_COMPLETED workflows:', error));
         }
       }
@@ -204,12 +204,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return requireAuth(request, async (req: AuthenticatedRequest) => {
     try {
       const booking = await prisma.booking.findUnique({
-        where: { id: params.id },
+        where: { id: id },
         include: {
           payments: true,
           cancellationPolicy: true,
@@ -240,7 +240,7 @@ export async function DELETE(
 
       // Soft delete (update status)
       await prisma.booking.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           status: 'CANCELLED',
           cancelledAt: new Date(),
@@ -249,7 +249,7 @@ export async function DELETE(
       });
 
       // Trigger cancellation workflows (async, don't wait)
-      triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, params.id)
+      triggerWorkflows(WorkflowTrigger.BOOKING_CANCELLED, id)
         .catch((error) => console.error('Failed to trigger BOOKING_CANCELLED workflows:', error));
 
       return NextResponse.json({

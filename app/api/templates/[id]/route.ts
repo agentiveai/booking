@@ -50,7 +50,7 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -59,7 +59,7 @@ export async function GET(
     }
 
     const template = await prisma.emailTemplate.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!template) {
@@ -86,7 +86,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -95,7 +95,7 @@ export async function PATCH(
     }
 
     const existingTemplate = await prisma.emailTemplate.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!existingTemplate) {
@@ -116,7 +116,7 @@ export async function PATCH(
     const validatedData = updateTemplateSchema.parse(body);
 
     const template = await prisma.emailTemplate.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(validatedData.name && { name: validatedData.name }),
         ...(validatedData.nameNo && { nameNo: validatedData.nameNo }),
@@ -153,7 +153,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -162,7 +162,7 @@ export async function DELETE(
     }
 
     const existingTemplate = await prisma.emailTemplate.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!existingTemplate) {
@@ -180,7 +180,7 @@ export async function DELETE(
     }
 
     await prisma.emailTemplate.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ success: true });

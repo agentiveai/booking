@@ -65,7 +65,7 @@ async function getAuthUser(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -74,7 +74,7 @@ export async function GET(
     }
 
     const workflow = await prisma.workflow.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!workflow) {
@@ -101,7 +101,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -111,7 +111,7 @@ export async function PATCH(
 
     // Check if workflow exists and user owns it
     const existingWorkflow = await prisma.workflow.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!existingWorkflow) {
@@ -126,7 +126,7 @@ export async function PATCH(
     const validatedData = updateWorkflowSchema.parse(body);
 
     const workflow = await prisma.workflow.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(validatedData.name && { name: validatedData.name }),
         ...(validatedData.nameNo && { nameNo: validatedData.nameNo }),
@@ -162,7 +162,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -172,7 +172,7 @@ export async function DELETE(
 
     // Check if workflow exists and user owns it
     const existingWorkflow = await prisma.workflow.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!existingWorkflow) {
@@ -184,7 +184,7 @@ export async function DELETE(
     }
 
     await prisma.workflow.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ success: true });
