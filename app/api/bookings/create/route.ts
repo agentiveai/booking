@@ -206,7 +206,7 @@ export const POST = withRateLimit(RateLimitPresets.api, async (request: NextRequ
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

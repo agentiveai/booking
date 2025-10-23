@@ -17,12 +17,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Check if this is a public confirmation request (no auth header)
     const authHeader = request.headers.get('authorization');
     const isPublicRequest = !authHeader;
 
     const booking = await prisma.booking.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
         customer: {
           select: {
@@ -108,12 +109,13 @@ export async function PATCH(
 ) {
   return requireAuth(request, async (req: AuthenticatedRequest) => {
     try {
+      const { id } = await params;
       const body = await request.json();
       const validatedData = updateBookingSchema.parse(body);
 
       // Get existing booking
       const booking = await prisma.booking.findUnique({
-        where: { id: id },
+        where: { id },
         include: {
           payments: true,
           cancellationPolicy: true,
@@ -188,7 +190,7 @@ export async function PATCH(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation error', details: error.errors },
+          { error: 'Validation error', details: error.issues },
           { status: 400 }
         );
       }
@@ -208,8 +210,9 @@ export async function DELETE(
 ) {
   return requireAuth(request, async (req: AuthenticatedRequest) => {
     try {
+      const { id } = await params;
       const booking = await prisma.booking.findUnique({
-        where: { id: id },
+        where: { id },
         include: {
           payments: true,
           cancellationPolicy: true,
