@@ -91,7 +91,7 @@ export async function POST(
     if (refundPercentage > 0) {
       // Get payment record
       const payment = await prisma.payment.findFirst({
-        where: { bookingId: params.id },
+        where: { bookingId: id },
         orderBy: { createdAt: 'desc' },
       });
 
